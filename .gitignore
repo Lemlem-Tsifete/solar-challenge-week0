@@ -1,0 +1,15 @@
+# Ignore virtual environments
+venv/
+.env/
+__pycache__/
+# Ignore Jupyter output
+.ipynb_checkpoints/
+# Ignore data files
+*.csv
+*.xlsx
+*.json
+# VSCode settings (optional)
+.vscode/
+# OS-specific
+.DS_Store
+Thumbs.db

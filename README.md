@@ -51,9 +51,10 @@ Benin demonstrates the highest solar energy potential, followed by Togo and Sier
 ## Repository Structure
 ```
 solar-challenge-week0/
-|
+│
 ├── app/
-│   └── main.py  
+│   └── main.py                  # Streamlit dashboard
+│
 ├── data/
 │   ├── benin_clean.csv
 │   ├── togo_clean.csv
@@ -66,11 +67,21 @@ solar-challenge-week0/
 │   └── compare_countries.ipynb
 │
 ├── src/
+│   ├── data_handler.py          # Data loading, cleaning, summarization
+│   ├── stats_analysis.py        # ANOVA test and statistical logic
+│   └── visualization.py         # Reusable plotting functions
+│
 ├── tests/
-├── .github/workflows/
+│   └── test_data_handler.py     # Unit tests
+│
+├── .github/
+│   └── workflows/
+│       └── ci.yml        # CI/CD for automated testing
+│
 ├── requirements.txt
 ├── .gitignore
 └── README.md
+
 ```
 
 ---

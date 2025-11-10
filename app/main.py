@@ -1,67 +1,52 @@
+import sys
+import os
+
+# ✅ Add project root to Python path first — before other imports
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import streamlit as st
 import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
+from src.data_handler import SolarDataProcessor
+from src.visualization import plot_bar, plot_box
+from src.stats_analysis import anova_test
 
-st.set_page_config(page_title="Solar Data Dashboard", layout="wide")
+st.set_page_config(page_title="Solar Dashboard", layout="wide")
 
-# --- Title ---
-st.title(" Solar Data Comparison Dashboard")
-st.write("Visual comparison of solar irradiance across Benin, Togo, and Sierra Leone")
+st.title("🌞 Solar Energy Data Comparison Dashboard")
 
-# --- Load data ---
 @st.cache_data
-def load_data():
-    benin = pd.read_csv("data/benin_clean.csv")
-    togo = pd.read_csv("data/togo_clean.csv")
-    sierra = pd.read_csv("data/sierraleone_clean.csv")
+def load_all_data():
+    countries = {
+        "Benin": "data/benin_clean.csv",
+        "Togo": "data/togo_clean.csv",
+        "Sierra Leone": "data/sierraleone_clean.csv"
+    }
+    datasets = []
+    for name, path in countries.items():
+        processor = SolarDataProcessor(path, name)
+        df = processor.clean_data()
+        datasets.append(df)
+    return datasets
 
-    benin["Country"] = "Benin"
-    togo["Country"] = "Togo"
-    sierra["Country"] = "Sierra Leone"
+datasets = load_all_data()
+combined_df = pd.concat(datasets)
+selected = st.sidebar.multiselect("Select countries", combined_df["Country"].unique(), combined_df["Country"].unique())
+filtered = combined_df[combined_df["Country"].isin(selected)]
 
-    df = pd.concat([benin, togo, sierra])
-    return df
-
-df = load_data()
-
-# --- Sidebar ---
-st.sidebar.header("🔍 Filter Options")
-countries = st.sidebar.multiselect(
-    "Select Countries",
-    options=df["Country"].unique(),
-    default=df["Country"].unique()
-)
-
-# Filter data
-df_filtered = df[df["Country"].isin(countries)]
-
-# --- Display key metrics ---
-st.subheader("📊 Summary Statistics")
-summary = df_filtered.groupby("Country")[["GHI", "DNI", "DHI"]].mean().round(2)
+# Summary table
+st.subheader("Summary Statistics")
+summary = filtered.groupby("Country")[["GHI", "DNI", "DHI"]].agg(["mean", "median", "std"])
 st.dataframe(summary)
 
-# --- Chart: Average GHI by Country ---
-st.subheader("☀️ Average GHI Comparison")
-fig, ax = plt.subplots(figsize=(8, 4))
-sns.barplot(data=df_filtered, x="Country", y="GHI", estimator="mean", ci=None)
-plt.ylabel("Mean GHI (W/m²)")
-plt.title("Average GHI by Country")
-st.pyplot(fig)
+# Visuals
+st.subheader("Visualizations")
+col1, col2 = st.columns(2)
+with col1:
+    st.pyplot(plot_bar(filtered))
+with col2:
+    st.pyplot(plot_box(filtered))
 
-# --- Chart: GHI Distribution ---
-st.subheader("📈 GHI Distribution by Country")
-fig2, ax2 = plt.subplots(figsize=(8, 4))
-sns.boxplot(data=df_filtered, x="Country", y="GHI")
-plt.ylabel("GHI (W/m²)")
-st.pyplot(fig2)
-
-# --- Optional: Correlation Heatmap ---
-if st.checkbox("Show Correlation Heatmap"):
-    corr = df_filtered[["GHI", "DNI", "DHI"]].corr()
-    fig3, ax3 = plt.subplots()
-    sns.heatmap(corr, annot=True, cmap="coolwarm", ax=ax3)
-    st.pyplot(fig3)
-
-st.markdown("---")
-st.caption("Developed by Lemlem Tsifete | 10 Academy Week 0 Challenge")
+# ANOVA test
+st.subheader("Statistical Comparison (ANOVA)")
+result = anova_test(*datasets)
+st.write(result)
